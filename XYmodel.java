@@ -4,8 +4,8 @@ import java.text.DecimalFormat;
 
 class XYmodel extends Canvas implements Runnable {
 
-    int size = 200;                             // number of lattice sites in a row (change if desired)
-    int squareWidth = 5;                        // pixels across one lattice site (increased for better visibility)
+    int size = 1000;                             // number of lattice sites in a row (change if desired)
+    int squareWidth = 1;                        // pixels across one lattice site (increased for better visibility)
     int canvasSize = size * squareWidth;        // total pixels across canvas
     double[][] s = new double[size][size];      // the 2D array of spins (angles between 0 and 2π)
     boolean running = false;                    // true when simulation is running

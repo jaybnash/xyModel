@@ -1,130 +1,61 @@
-import java.awt.*;
-import java.awt.event.*;
-import java.text.DecimalFormat;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 
-class XYmodel extends Canvas implements Runnable {
+public class XYModel {
+    private double T;
+    private int L;
+    private double[][] spins;
 
-    int size = 1000;                             // number of lattice sites in a row (change if desired)
-    int squareWidth = 1;                        // pixels across one lattice site (increased for better visibility)
-    int canvasSize = size * squareWidth;        // total pixels across canvas
-    double[][] s = new double[size][size];      // the 2D array of spins (angles between 0 and 2π)
-    boolean running = false;                    // true when simulation is running
-    boolean showArrows = false;                 // flag to toggle between color and arrow visualization
-    Button startButton = new Button("  Start  ");
-    Scrollbar tScroller;                        // scrollbar to adjust temperature
-    Label tLabel = new Label("Temperature = 1.00  ");    // text label next to scrollbar
-    DecimalFormat twoPlaces = new DecimalFormat("0.00");    // to format temperature readout
-    Image offScreenImage;                       // for double-buffering
-    Graphics offScreenGraphics;
-    Checkbox arrowCheckbox;                     // checkbox to toggle visualization mode
-
-    // Constructor method handles all the initializations:
-    XYmodel() {
-        Frame frame = new Frame("XY Model");       // initialize the GUI...
-        frame.addWindowListener(new WindowAdapter() {
-            public void windowClosing(WindowEvent e) {
-                System.exit(0);                            // close button exits program
+    public XYModel(double T, int L) {
+        this.T = T;
+        this.L = L;
+        this.spins = new double[L][L];
+        for (int i = 0; i < L; i++) {
+            for (int j = 0; j < L; j++) {
+                spins[i][j] = Math.random() * 2 * Math.PI;
             }
-        });
-        Panel canvasPanel = new Panel();
-        frame.add(canvasPanel);
-        canvasPanel.add(this);
-        setSize(canvasSize,canvasSize);
-        Panel controlPanel = new Panel();
-        frame.add(controlPanel,BorderLayout.SOUTH);
-        controlPanel.add(tLabel);
-        tScroller = new Scrollbar(Scrollbar.HORIZONTAL,100,1,1,1001) {
-            public Dimension getPreferredSize() {
-                return new Dimension(100,15);            // make it bigger than default
-            }
-        };
-        tScroller.setBlockIncrement(1);        // enables fine adjustments
-        tScroller.addAdjustmentListener(new AdjustmentListener() {
-            public void adjustmentValueChanged(AdjustmentEvent e) {
-                tLabel.setText("Temperature = " + twoPlaces.format(tScroller.getValue()/100.0));
-            }
-        });
-        controlPanel.add(tScroller);
-        controlPanel.add(new Label("     "));            // leave some space
-
-        // Add the checkbox to toggle visualization mode
-        arrowCheckbox = new Checkbox("Show Arrows");
-        arrowCheckbox.addItemListener(new ItemListener() {
-            public void itemStateChanged(ItemEvent e) {
-                showArrows = arrowCheckbox.getState();
-                // Repaint the entire lattice to update the visualization
-                for (int i=0; i < size; i++) {
-                    for (int j=0; j < size; j++) {
-                        colorSquare(i,j);
-                    }
-                }
-                repaint();
-            }
-        });
-        controlPanel.add(arrowCheckbox);
-        controlPanel.add(new Label("     "));            // leave some space
-
-        startButton.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                running = !running;
-                if (running) startButton.setLabel("Pause"); else startButton.setLabel("Resume");
-            }
-        });
-        controlPanel.add(startButton);
-        frame.pack();
-        offScreenImage = createImage(canvasSize,canvasSize);
-        offScreenGraphics = offScreenImage.getGraphics();
-
-        for (int i=0; i < size; i++) {                    // initialize the lattice...
-            for (int j=0; j < size; j++) {
-                s[i][j] = Math.random() * 2 * Math.PI;    // random angle between 0 and 2π
-                colorSquare(i,j);
-            }
-        }
-
-        frame.setVisible(true);          // we're finally ready to show it!
-
-        Thread t = new Thread(this);          // create a thread to run the simulation
-        t.start();                            // and let 'er rip...
-    }
-
-    // Run method gets called by new thread to carry out the simulation:
-    public void run() {
-        double deltaTheta = Math.PI;  // maximum change in angle
-        while (true) {
-            if (running) {
-                double temp = tScroller.getValue() / 100.0;
-                for (int step=0; step<10000; step++) {       // adjust number of steps as desired
-                    int i = (int) (Math.random() * size);    // choose a random row and column
-                    int j = (int) (Math.random() * size);
-                    double thetaOld = s[i][j];
-                    double deltaThetaRandom = (Math.random() - 0.5) * 2 * deltaTheta; // random change in [-deltaTheta, deltaTheta]
-                    double thetaNew = thetaOld + deltaThetaRandom;
-                    thetaNew = thetaNew % (2 * Math.PI);
-                    if (thetaNew < 0) thetaNew += 2 * Math.PI;
-
-                    double eDiff = deltaU(i, j, thetaNew);
-
-                    if ((eDiff <= 0) || (Math.random() < Math.exp(-eDiff / temp))) {    // Metropolis!
-                        s[i][j] = thetaNew;
-                        colorSquare(i,j);
-                    }
-                }
-                repaint();        // causes update method to be called soon
-            }
-            try { Thread.sleep(1); } catch (InterruptedException e) {}  // sleep time in milliseconds
         }
     }
 
-    // Given a lattice site and proposed new angle, compute energy change; note pbc:
-    double deltaU(int i, int j, double thetaNew) {
-        double thetaOld = s[i][j];
+    private void reset() {
+        for (int i = 0; i < L; i++) {
+            for (int j = 0; j < L; j++) {
+                spins[i][j] = Math.random() * 2 * Math.PI;
+            }
+        }
+    }
+
+    public void step() {
+        double deltaTheta = 2 * Math.PI;
+        
+        for (int step=0; step<10000; step++) {       // adjust number of steps as desired
+            int i = (int) (Math.random() * this.L);    // choose a random row and column
+            int j = (int) (Math.random() * this.L);
+            double thetaOld = this.spins[i][j];
+            double deltaThetaRandom = (Math.random() - 0.5) * 2 * deltaTheta; // random change in [-deltaTheta, deltaTheta]
+            double thetaNew = thetaOld + deltaThetaRandom;
+            thetaNew = thetaNew % (2 * Math.PI);
+            if (thetaNew < 0) thetaNew += 2 * Math.PI;
+
+            double eDiff = deltaU(i, j, thetaNew);
+
+            if ((eDiff <= 0) || (Math.random() < Math.exp(-eDiff / this.T))) {    // Metropolis!
+                this.spins[i][j] = thetaNew;
+            }
+        }
+
+    }
+
+    private double deltaU(int i, int j, double thetaNew) {
+        double thetaOld = this.spins[i][j];
         double leftTheta, rightTheta, topTheta, bottomTheta;
 
-        if (i == 0) leftTheta = s[size-1][j]; else leftTheta = s[i-1][j];
-        if (i == size-1) rightTheta = s[0][j]; else rightTheta = s[i+1][j];
-        if (j == 0) topTheta = s[i][size-1]; else topTheta = s[i][j-1];
-        if (j == size-1) bottomTheta = s[i][0]; else bottomTheta = s[i][j+1];
+        if (i == 0) leftTheta = this.spins[this.L-1][j]; else leftTheta = this.spins[i-1][j];
+        if (i == this.L-1) rightTheta = this.spins[0][j]; else rightTheta = this.spins[i+1][j];
+        if (j == 0) topTheta = this.spins[i][this.L-1]; else topTheta = this.spins[i][j-1];
+        if (j == this.L-1) bottomTheta = this.spins[i][0]; else bottomTheta = this.spins[i][j+1];
 
         double deltaU = - (Math.cos(thetaNew - leftTheta) + Math.cos(thetaNew - rightTheta) +
                            Math.cos(thetaNew - topTheta) + Math.cos(thetaNew - bottomTheta))
@@ -133,79 +64,153 @@ class XYmodel extends Canvas implements Runnable {
         return deltaU;
     }
 
-    // Color a given square or draw an arrow according to the site's orientation:
-    void colorSquare(int i, int j) {
-        if (showArrows) {
-            // Draw a white background
-            offScreenGraphics.setColor(Color.white);
-            offScreenGraphics.fillRect(i * squareWidth, j * squareWidth, squareWidth, squareWidth);
+    private double magnetization() {
+        double sumX = 0;
+        double sumY = 0;
+        for (int i = 0; i < L; i++) {
+            for (int j = 0; j < L; j++) {
+                sumX += Math.cos(spins[i][j]);
+                sumY += Math.sin(spins[i][j]);
+            }
+        }
+        return Math.sqrt(sumX * sumX + sumY * sumY) / (L * L);
+    }
 
-            // Draw an arrow representing the spin direction
-            double theta = s[i][j] % (2 * Math.PI);
+    private double energy() {
+        double energy = 0;
+        for (int i = 0; i < L; i++) {
+            for (int j = 0; j < L; j++) {
+                double leftTheta, rightTheta, topTheta, bottomTheta;
+                if (i == 0) leftTheta = this.spins[this.L-1][j]; else leftTheta = this.spins[i-1][j];
+                if (i == this.L-1) rightTheta = this.spins[0][j]; else rightTheta = this.spins[i+1][j];
+                if (j == 0) topTheta = this.spins[i][this.L-1]; else topTheta = this.spins[i][j-1];
+                if (j == this.L-1) bottomTheta = this.spins[i][0]; else bottomTheta = this.spins[i][j+1];
+                energy += -Math.cos(spins[i][j] - leftTheta);
+                energy += -Math.cos(spins[i][j] - rightTheta);
+                energy += -Math.cos(spins[i][j] - topTheta);
+                energy += -Math.cos(spins[i][j] - bottomTheta);
+            }
+        }
+        return (energy * 0.5) / (this.L * this.L);
+    }
 
-            int xCenter = i * squareWidth + squareWidth / 2;
-            int yCenter = j * squareWidth + squareWidth / 2;
-            int arrowLength = (int) (squareWidth * 0.8); // arrow length is 80% of square size
-            int halfLength = arrowLength / 2;
+    private int countVortices() {
+        int vortexCount = 0;
+        for (int i = 0; i < L - 1; i++) {
+            for (int j = 0; j < L - 1; j++) {
+                double dTheta = spins[i][j] + spins[i+1][j] + spins[i+1][j+1] + spins[i][j+1];
+                if (Math.abs(dTheta) >= 2 * Math.PI) {
+                    vortexCount++;
+                }
+            }
+        }
+        return vortexCount;
+    }
 
-            int xStart = (int) (xCenter - halfLength * Math.cos(theta));
-            int yStart = (int) (yCenter + halfLength * Math.sin(theta));
-            int xEnd = (int) (xCenter + halfLength * Math.cos(theta));
-            int yEnd = (int) (yCenter - halfLength * Math.sin(theta));
+    public Object[] simulate_energy_mag_sus(int L, float T_min, float T_max, int T_steps, int equilibration_steps, int measurement_steps) {
+        float dT = (T_max - T_min) / T_steps;
+        float T = T_min;
+        double[] energies = new double[T_steps];
+        double[] magnetizations = new double[T_steps];
+        double[] susceptibilities = new double[T_steps];
+        int[] vortexCounts = new int[T_steps];
+        for (int t = 0; t < T_steps; t++) {
+            this.reset();
+            this.T = T;
+            for (int i = 0; i < equilibration_steps; i++) {
+                this.step();
+            }
+            double E = 0;
+            double E2 = 0;
+            double M = 0;
+            double M2 = 0;
+            int vortexCount = 0;
+            for (int i = 0; i < measurement_steps; i++) {
+                this.step();
+                double energy = this.energy();
+                double magnetization = this.magnetization();
+                vortexCount += this.countVortices();
+                E += energy;
+                E2 += energy * energy;
+                M += magnetization;
+                M2 += magnetization * magnetization;
+            }
+            M = M / measurement_steps;
+            E = E / measurement_steps;
+            energies[t] = E;
+            magnetizations[t] = M;
+            susceptibilities[t] = (this.L * this.L) * (1 / this.T) * (M2 - (M * M));
+            vortexCounts[t] = vortexCount / measurement_steps;
+            T += dT;
+        }
+        return new Object[]{energies, magnetizations, susceptibilities, vortexCounts};
+    }
 
-            // Draw the arrow
-            if (theta < 0)
-                theta += 2 * Math.PI;
-            float hue = (float) (theta / (2 * Math.PI));
-            Color c = Color.getHSBColor(hue, 1.0f, 1.0f);
-            offScreenGraphics.setColor(c);
-            drawArrow(offScreenGraphics, xStart, yStart, xEnd, yEnd, squareWidth / 5, squareWidth / 5);
+    public static void main(String[] args) {
+        int[] latticeSizes = {10, 25, 50, 100, 200};  // Different lattice sizes
+        float T_min = 0.1f;
+        float T_max = 2.5f;
+        int T_steps = 50;
+        int equilibration_steps = 100;
+        int measurement_steps = 100;
+        int n = 10;
 
-        } else {
-            // Use the colored square visualization
-            double theta = s[i][j] % (2 * Math.PI);
-            if (theta < 0) theta += 2 * Math.PI;
-            float hue = (float)(theta / (2 * Math.PI));
-            Color c = Color.getHSBColor(hue, 1.0f, 1.0f);
-            offScreenGraphics.setColor(c);
-            offScreenGraphics.fillRect(i*squareWidth, j*squareWidth, squareWidth, squareWidth);
+        String url = "jdbc:sqlite:./data/xy_model.db";
+
+        // Connect to the database
+        try (Connection conn = DriverManager.getConnection(url)) {
+            // Create table if it doesn't exist
+            String createTableSQL = "CREATE TABLE IF NOT EXISTS SimulationResults ("
+                    + "T REAL, "
+                    + "L INTEGER, "
+                    + "energy REAL, "
+                    + "magnetization REAL, "
+                    + "susceptibility REAL, "
+                    + "vortex_count INTEGER)";
+            conn.createStatement().execute(createTableSQL);
+
+            String insertSQL = "INSERT INTO SimulationResults (T, L, energy, magnetization, susceptibility, vortex_count) VALUES (?, ?, ?, ?, ?, ?)";
+            try (PreparedStatement pstmt = conn.prepareStatement(insertSQL)) {
+                for (int L : latticeSizes) {
+                    for (int run = 0; run < n; run++) {
+                        XYModel model = new XYModel(T_min, L);
+                        Object[] results = model.simulate_energy_mag_sus(L, T_min, T_max, T_steps, equilibration_steps, measurement_steps);
+                        double[] energies = (double[]) results[0];
+                        double[] magnetizations = (double[]) results[1];
+                        double[] susceptibilities = (double[]) results[2];
+                        int[] vortexCounts = (int[]) results[3];
+
+                        // Insert each result set into the database
+                        float T = T_min;
+                        float dT = (T_max - T_min) / T_steps;
+                        for (int i = 0; i < T_steps; i++) {
+                            pstmt.setFloat(1, T);
+                            pstmt.setInt(2, L);
+                            pstmt.setDouble(3, energies[i]);
+                            pstmt.setDouble(4, magnetizations[i]);
+                            pstmt.setDouble(5, susceptibilities[i]);
+                            pstmt.setInt(6, vortexCounts[i]);
+                            pstmt.executeUpdate();
+                            T += dT;
+                        }
+                        System.out.println("Run " + (run + 1) + " completed for L=" + L);
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
         }
     }
 
-    // Method to draw an arrow from (x1, y1) to (x2, y2)
-    void drawArrow(Graphics g, int x1, int y1, int x2, int y2, int d, int h) {
-        int dx = x2 - x1, dy = y2 - y1;
-        double D = Math.sqrt(dx*dx + dy*dy);
-        double xm = D - d, xn = xm, ym = h, yn = -h, x;
-        double sin = dy / D, cos = dx / D;
-    
-        x = xm*cos - ym*sin + x1;
-        ym = xm*sin + ym*cos + y1;
-        xm = x;
-    
-        x = xn*cos - yn*sin + x1;
-        yn = xn*sin + yn*cos + y1;
-        xn = x;
-    
-        int[] xpoints = {x2, (int) xm, (int) xn};
-        int[] ypoints = {y2, (int) ym, (int) yn};
-    
-        g.drawLine(x1, y1, x2, y2);
-        g.fillPolygon(xpoints, ypoints, 3);
+    public double[][] getSpins() {
+        return spins;
     }
 
-    // Override default update method to skip drawing the background:
-    public void update(Graphics g) {
-        paint(g);
+    public double getT() {
+        return T;
     }
 
-    // Paint method just blasts the off-screen image to the screen:
-    public void paint(Graphics g) {
-        g.drawImage(offScreenImage,0,0,canvasSize,canvasSize,this);
+    public void setT(double T) {
+        this.T = T;
     }
-
-    // Main method just calls constructor to get started:
-    public static void main(String[] args) {
-        new XYmodel();    
-    }  
 }

@@ -2,7 +2,8 @@ import sqlite3
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-plt.style.use('seaborn-v0_8-poster')
+import scienceplots
+plt.style.use(['science','no-latex'])
 
 # Connect to SQLite database
 db_path = './data/xy_model.db'
@@ -38,14 +39,14 @@ for i, L in enumerate(lattice_sizes):
 label = ['o','^','s','P','D','2','*','p']
 
 # Create a 2x2 subplot grid
-fig, axs = plt.subplots(2, 2, figsize=(16, 12))
+fig, axs = plt.subplots(2, 2, figsize=(12, 12))
 
 # Plot energy vs. temperature
 for i, L in enumerate(lattice_sizes):
     axs[0, 0].plot(T_range, energy_data[L], label=f'L={L}', marker=f'{label[i]}', markerfacecolor='none', markeredgewidth=1.0, linestyle='none')
 axs[0, 0].set_xlabel("$T$", fontsize=16)
 axs[0, 0].set_ylabel("$E$", fontsize=16)
-axs[0, 0].legend(loc='upper left')
+axs[0, 0].legend(title='Lattice Size', title_fontsize=12)
 axs[0, 0].grid(True, linewidth=1, color='#c7c7c7')
 axs[0, 0].set_title("Energy vs. Temperature")
 
@@ -55,7 +56,7 @@ for i, L in enumerate(lattice_sizes):
 axs[0, 1].set_xlabel("$T$", fontsize=16)
 axs[0, 1].set_ylabel("$M$", fontsize=16)
 axs[0, 1].grid(True, linewidth=1, color='#c7c7c7')
-axs[0, 1].legend()
+axs[0, 1].legend(title='Lattice Size', title_fontsize=12)
 axs[0, 1].set_title("Magnetization vs. Temperature")
 
 # Plot susceptibility vs. temperature (log scale)
@@ -64,17 +65,17 @@ for i, L in enumerate(lattice_sizes):
 axs[1, 0].set_xlabel("$T$", fontsize=16)
 axs[1, 0].set_ylabel("$S$", fontsize=16)
 axs[1, 0].grid(True, linewidth=1, color='#c7c7c7')
-axs[1, 0].legend()
+axs[1, 0].legend(title='Lattice Size', title_fontsize=12)
 axs[1, 0].set_yscale('log')
-axs[1, 0].set_title("Susceptibility vs. Temperature (log scale)")
+axs[1, 0].set_title("Susceptibility vs. Temperature")
 
 # Plot vortex count vs. temperature
 for i, L in enumerate(lattice_sizes):
     axs[1, 1].plot(T_range, vortex_data[L], label=f'L={L}', marker=f'{label[i]}', markerfacecolor='none', markeredgewidth=1.0, linestyle='none')
 axs[1, 1].set_xlabel("$T$", fontsize=16)
-axs[1, 1].set_ylabel("Vortex Count", fontsize=16)
+axs[1, 1].set_ylabel("$V$", fontsize=16)
 axs[1, 1].grid(True, linewidth=1, color='#c7c7c7')
-axs[1, 1].legend()
+axs[1, 1].legend(title='Lattice Size', title_fontsize=12)
 axs[1, 1].set_title("Vortex Count vs. Temperature")
 
 # Adjust layout and save the figure

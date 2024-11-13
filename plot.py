@@ -2,7 +2,9 @@ import sqlite3
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-plt.style.use('seaborn-v0_8-poster')
+import scienceplots
+plt.style.use(['science','no-latex'])
+#plt.style.use('seaborn-v0_8-poster')
 
 # Connect to SQLite database
 db_path = './data/xy_model.db'
@@ -42,7 +44,7 @@ for i, L in enumerate(lattice_sizes):
     plt.plot(T_range, energy_data[L], label=f'L={L}', marker=f'{label[i]}', markerfacecolor='none', markeredgewidth=1.0, linestyle='none')
 plt.xlabel("$T$", fontsize=16)
 plt.ylabel("$E$", fontsize=16)
-plt.legend(loc='upper left')
+plt.legend(loc='upper left', title='Lattice Size', title_fontsize=12)
 plt.grid(True, linewidth=1, color='#c7c7c7')
 plt.savefig("plots/energy_v_t.png", dpi=500, bbox_inches='tight')
 plt.show()
@@ -54,7 +56,7 @@ for i, L in enumerate(lattice_sizes):
 plt.xlabel("$T$", fontsize=16)
 plt.ylabel("$M$", fontsize=16)
 plt.grid(True, linewidth=1, color='#c7c7c7')
-plt.legend()
+plt.legend(loc='upper right', title='Lattice Size', title_fontsize=12)
 plt.savefig("plots/mag_v_t.png", dpi=500, bbox_inches='tight')
 plt.show()
 
@@ -65,7 +67,7 @@ for i, L in enumerate(lattice_sizes):
 plt.xlabel("$T$", fontsize=16)
 plt.ylabel("$S$", fontsize=16)
 plt.grid(True, linewidth=1, color='#c7c7c7')
-plt.legend()
+plt.legend(loc='upper right', title='Lattice Size', title_fontsize=12)
 plt.yscale('log')
 plt.savefig("plots/sus_v_t.png", dpi=500, bbox_inches='tight')
 plt.show()
@@ -77,6 +79,6 @@ for i, L in enumerate(lattice_sizes):
 plt.xlabel("$T$", fontsize=16)
 plt.ylabel("Vortex Count", fontsize=16)
 plt.grid(True, linewidth=1, color='#c7c7c7')
-plt.legend()
+plt.legend(loc='upper right', title='Lattice Size', title_fontsize=12)
 plt.savefig("plots/vortex_v_t.png", dpi=500, bbox_inches='tight')
 plt.show()

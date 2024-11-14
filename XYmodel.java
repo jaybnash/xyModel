@@ -69,8 +69,8 @@ public class XYModel {
         double sumY = 0;
         for (int i = 0; i < L; i++) {
             for (int j = 0; j < L; j++) {
-                sumX += Math.cos(spins[i][j]);
-                sumY += Math.sin(spins[i][j]);
+                sumX += Math.cos(-1 * spins[i][j]);
+                sumY += Math.sin(-1 * spins[i][j]);
             }
         }
         return Math.sqrt(sumX * sumX + sumY * sumY) / (L * L);
@@ -96,15 +96,30 @@ public class XYModel {
 
     private int countVortices() {
         int vortexCount = 0;
-        for (int i = 0; i < L - 1; i++) {
-            for (int j = 0; j < L - 1; j++) {
-                double dTheta = spins[i][j] + spins[i+1][j] + spins[i+1][j+1] + spins[i][j+1];
+        for (int i = 0; i < L-1; i++) {
+            for (int j = 0; j < L-1; j++) {
+
+                double theta0 = spins[i][j];
+                double theta1 = spins[i+1][j];
+                double theta2 = spins[i][j+1];
+                double theta3 = spins[i+1][j+1];
+
+                double dTheta = wrapAngle(theta1 - theta0) + wrapAngle(theta2 - theta1)
+                              + wrapAngle(theta3 - theta2) + wrapAngle(theta0 - theta3);
+
                 if (Math.abs(dTheta) >= 2 * Math.PI) {
                     vortexCount++;
                 }
             }
         }
         return vortexCount;
+    }
+
+    private double wrapAngle(double angle) {
+        angle = angle % (2 * Math.PI);
+        if (angle < -Math.PI) angle += 2 * Math.PI;
+        if (angle > Math.PI) angle -= 2 * Math.PI;
+        return angle;
     }
 
     public Object[] simulate_energy_mag_sus(int L, float T_min, float T_max, int T_steps, int equilibration_steps, int measurement_steps) {

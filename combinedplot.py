@@ -3,6 +3,14 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import scienceplots
+
+# Python script to plot data from xy model simulations
+# Accesses database to retrieve simulation results
+# Uses matplotlib to create plots of energy, magnetization, susceptibility, and vortex count vs. temperature
+# Since the raw data is not submitted, a sample plot is provided in the submission files
+# Jay Nash 11/15/2024
+
+# Style the plots so they look nice
 plt.style.use(['science','no-latex'])
 
 # Connect to SQLite database
@@ -16,20 +24,20 @@ df = pd.read_sql_query(query, conn)
 # Close the database connection
 conn.close()
 
-# Calculate averages for energy, magnetization, susceptibility, and vortex count per temperature and lattice size
+# Averages energy, magnetization, susceptibility, and vortex count per temperature and lattice size
 df_avg = df.groupby(['T', 'L']).mean().reset_index()
 
-# Extract unique temperature and lattice sizes
+# Get unique temperature and lattice sizes
 T_range = sorted(df_avg['T'].unique())
 lattice_sizes = sorted(df_avg['L'].unique())
 
-# Initialize dictionaries to hold data for different lattice sizes
+# Init dictionaries to hold data for different lattice sizes
 energy_data = {}
 magnetization_data = {}
 susceptibility_data = {}
 vortex_data = {}
 
-# Populate dictionaries with averaged data
+# Make dictionaries with averaged data
 for i, L in enumerate(lattice_sizes):
     energy_data[L] = df_avg[df_avg['L'] == L]['energy'].values
     magnetization_data[L] = df_avg[df_avg['L'] == L]['magnetization'].values

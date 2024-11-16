@@ -2,12 +2,16 @@ import java.awt.*;
 import java.awt.event.*;
 import java.text.DecimalFormat;
 
+// Class to visualize the XY model using a GUI
+// Based heavily on the Ising model visualization code by Dr. Daniel V. Schroeder: https://physics.weber.edu/thermal/isingJava.html
+// Jay Nash 11/15/2024
+
 class Visualize extends Canvas implements Runnable {
 
     int size = 200;                             // number of lattice sites in a row (change if desired)
     int squareWidth = 5;                        // pixels across one lattice site (increased for better visibility)
     int canvasSize = size * squareWidth;        // total pixels across canvas
-    XYModel model;      // the 2D array of spins (angles between 0 and 2π)
+    XYModel model;                              // core model
     boolean running = false;                    // true when simulation is running
     boolean showArrows = false;                 // flag to toggle between color and arrow visualization
     Button startButton = new Button("  Start  ");
@@ -75,36 +79,41 @@ class Visualize extends Canvas implements Runnable {
         frame.pack();
         offScreenImage = createImage(canvasSize,canvasSize);
         offScreenGraphics = offScreenImage.getGraphics();
-        double s[][] = model.getSpins();    // get the lattice of spins
-        for (int i=0; i < size; i++) {                    // initialize the lattice...
-            for (int j=0; j < size; j++) {    // random angle between 0 and 2π
+        double s[][] = model.getSpins();    // get the inital state of the lattice of spins
+        for (int i=0; i < size; i++) {                    
+            for (int j=0; j < size; j++) {    
                 colorSquare(i,j);
             }
         }
 
-        frame.setVisible(true);          // we're finally ready to show it!
+        frame.setVisible(true);          // show the frame
 
         Thread t = new Thread(this);          // create a thread to run the simulation
-        t.start();                            // and let 'er rip...
+        t.start();                            // start the thread
     }
 
     // Run method gets called by new thread to carry out the simulation:
     public void run() {
         while (true) {
             if (running) {
+                // gets the temperature from the scrollbar and updates the model temperature
                 double temp = tScroller.getValue() / 100.0;
                 this.model.setT(temp);
-                for (int step=0; step<1; step++) {       // adjust number of steps as desired
-                    this.model.step();                        // take a Monte Carlo step
+
+                // tell the model to take a step
+                for (int step=0; step<1; step++) {       
+                    this.model.step();                        
                 }
+
+                // update the visualization
                 for (int i = 0; i < size; i++) {
                     for (int j = 0; j < size; j++) {
                         colorSquare(i, j);
                     }
                 }
-                repaint();        // causes update method to be called soon
+                repaint();  // call repaint to update visible frame
             }
-            try { Thread.sleep(1); } catch (InterruptedException e) {}  // sleep time in milliseconds
+            try { Thread.sleep(1); } catch (InterruptedException e) {}  // sleep for a millisecond
         }
     }
 

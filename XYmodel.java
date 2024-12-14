@@ -70,7 +70,7 @@ public class XYModel {
             if ((eDiff <= 0) || (Math.random() < Math.exp(-eDiff / this.T))) this.spins[i][j] = thetaNew;
         }
 
-    }
+    }   
 
     // Method to calculate the difference in energy between the new spin value and the old spin value
     private double deltaU(int i, int j, double thetaNew) {
@@ -158,7 +158,9 @@ public class XYModel {
                               + wrapAngle(theta3 - theta2) + wrapAngle(theta0 - theta3);
                 
                 // take the absolute value of the change in angle, as dTheta can be between -4pi and 4pi
-                if (Math.abs(dTheta) >= 2 * Math.PI) vortexCount++;
+                if (Math.abs(dTheta) >= 2 * Math.PI) {
+                    vortexCount = vortexCount + 1;
+                }
             }
         }
         return vortexCount;
@@ -183,7 +185,8 @@ public class XYModel {
         double[] energies = new double[T_steps];
         double[] magnetizations = new double[T_steps];
         double[] susceptibilities = new double[T_steps];
-        int[] vortexCounts = new int[T_steps];
+        double[] vortexCounts = new double[T_steps];
+        double[] specificHeats = new double[T_steps];
 
         // for each temperature do the following:
         // reset the lattice spins to random values
@@ -205,7 +208,7 @@ public class XYModel {
             double E2 = 0;
             double M = 0;
             double M2 = 0;
-            int vortexCount = 0;
+            double vortexCount = 0;
 
             // measurement steps
             for (int i = 0; i < measurement_steps; i++) {
@@ -218,10 +221,11 @@ public class XYModel {
                 M += magnetization;                           // sum magnetization
                 M2 += magnetization * magnetization;          // sum magnetization^2
             }
-
             // store measurements
+            M2 = M2 / measurement_steps;
             M = M / measurement_steps;  // calculate average magnetization over all measurement steps
-            E = E / measurement_steps;  // calculate average energy over all measurement steps
+            E = E / measurement_steps;
+            E2 = E2 / measurement_steps;  // calculate average energy over all measurement steps
             energies[t] = E;            // store average energy
             magnetizations[t] = M;      // store average magnetization
 
@@ -233,14 +237,20 @@ public class XYModel {
             susceptibilities[t] = (this.L * this.L) * (1 / this.T) * (M2 - (M * M));
 
             // store average vortex count over all measurement steps
-            vortexCounts[t] = vortexCount / measurement_steps;
+            vortexCount = ( vortexCount / measurement_steps );
+            vortexCount = vortexCount / (this.L * this.L);
+            vortexCounts[t] = vortexCount;
+
+            double varianceE = E2 - (E * E);
+            double Cv = varianceE / (this.T * this.T);
+            specificHeats[t] = Cv;
 
             // increment temperature for next run
             T += dT;
         }
 
         // return data to caller in an array of arrays, since only one object may be returned per method
-        return new Object[]{energies, magnetizations, susceptibilities, vortexCounts};
+        return new Object[]{energies, magnetizations, susceptibilities, vortexCounts, specificHeats};
     }
 
     // Main method to run the simulation for a range of lattice sizes and store collected results in database
@@ -273,11 +283,12 @@ public class XYModel {
                     + "energy REAL, "
                     + "magnetization REAL, "
                     + "susceptibility REAL, "
-                    + "vortex_count INTEGER)";
+                    + "vortex_count REAL, "
+                    + "specific_heat REAL)";
             conn.createStatement().execute(createTableSQL);
 
             // sql command prepared for inserting data into the database
-            String insertSQL = "INSERT INTO SimulationResults (T, L, energy, magnetization, susceptibility, vortex_count) VALUES (?, ?, ?, ?, ?, ?)";
+            String insertSQL = "INSERT INTO SimulationResults (T, L, energy, magnetization, susceptibility, vortex_count, specific_heat) VALUES (?, ?, ?, ?, ?, ?, ?)";
 
             // this try handles the insertion of data into the database via a prepared statement
             try (PreparedStatement pstmt = conn.prepareStatement(insertSQL)) {
@@ -294,7 +305,8 @@ public class XYModel {
                         double[] energies = (double[]) results[0];
                         double[] magnetizations = (double[]) results[1];
                         double[] susceptibilities = (double[]) results[2];
-                        int[] vortexCounts = (int[]) results[3];
+                        double[] vortexCounts = (double[]) results[3];
+                        double[] specificHeats = (double[]) results[4];
 
                         // insert data into database, calculating the temperature for each run
                         // we can calculate the temperature now because we know how the temperature changes between runs and how the data is structured
@@ -308,7 +320,8 @@ public class XYModel {
                             pstmt.setDouble(3, energies[i]);
                             pstmt.setDouble(4, magnetizations[i]);
                             pstmt.setDouble(5, susceptibilities[i]);
-                            pstmt.setInt(6, vortexCounts[i]);
+                            pstmt.setDouble(6, vortexCounts[i]);
+                            pstmt.setDouble(7, specificHeats[i]);
 
                             // execute prepared sql statement
                             pstmt.executeUpdate();

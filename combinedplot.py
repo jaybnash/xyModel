@@ -36,13 +36,14 @@ energy_data = {}
 magnetization_data = {}
 susceptibility_data = {}
 vortex_data = {}
-
-# Make dictionaries with averaged data
+specific_heat_data = {}
+# Populate dictionaries with averaged data
 for i, L in enumerate(lattice_sizes):
     energy_data[L] = df_avg[df_avg['L'] == L]['energy'].values
     magnetization_data[L] = df_avg[df_avg['L'] == L]['magnetization'].values
     susceptibility_data[L] = df_avg[df_avg['L'] == L]['susceptibility'].values
     vortex_data[L] = df_avg[df_avg['L'] == L]['vortex_count'].values
+    specific_heat_data[L] = df_avg[df_avg['L'] == L]['specific_heat'].values
 
 label = ['o','^','s','P','D','2','*','p']
 
@@ -79,7 +80,7 @@ axs[1, 0].set_title("Susceptibility vs. Temperature")
 
 # Plot vortex count vs. temperature
 for i, L in enumerate(lattice_sizes):
-    axs[1, 1].plot(T_range, vortex_data[L], label=f'L={L}', marker=f'{label[i]}', markerfacecolor='none', markeredgewidth=1.0, linestyle='none')
+    axs[1, 1].plot(T_range, specific_heat_data[L], label=f'L={L}', marker=f'{label[i]}', markerfacecolor='none', markeredgewidth=1.0, linestyle='none')
 axs[1, 1].set_xlabel("$T$", fontsize=16)
 axs[1, 1].set_ylabel("$V$", fontsize=16)
 axs[1, 1].grid(True, linewidth=1, color='#c7c7c7')

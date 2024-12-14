@@ -29,12 +29,14 @@ energy_data = {}
 magnetization_data = {}
 susceptibility_data = {}
 vortex_data = {}
+specific_heat_data = {}
 # Populate dictionaries with averaged data
 for i, L in enumerate(lattice_sizes):
     energy_data[L] = df_avg[df_avg['L'] == L]['energy'].values
     magnetization_data[L] = df_avg[df_avg['L'] == L]['magnetization'].values
     susceptibility_data[L] = df_avg[df_avg['L'] == L]['susceptibility'].values
     vortex_data[L] = df_avg[df_avg['L'] == L]['vortex_count'].values
+    specific_heat_data[L] = df_avg[df_avg['L'] == L]['specific_heat'].values
 
 label = ['o','^','s','P','D','2','*','p']
 
@@ -77,8 +79,19 @@ plt.figure(figsize=(12, 8))
 for i, L in enumerate(lattice_sizes):
     plt.plot(T_range, vortex_data[L], label=f'L={L}', marker=f'{label[i]}', markerfacecolor='none', markeredgewidth=1.0, linestyle='none')
 plt.xlabel("$T$", fontsize=16)
-plt.ylabel("Vortex Count", fontsize=16)
+plt.ylabel("Vortex Density", fontsize=16)
+plt.grid(True, linewidth=1, color='#c7c7c7')
+plt.legend(loc='upper left', title='Lattice Size', title_fontsize=12)
+plt.savefig("plots/vortex_v_t.png", dpi=500, bbox_inches='tight')
+plt.show()
+
+# Plot specific heat vs. temperature
+plt.figure(figsize=(12, 8))
+for i, L in enumerate(lattice_sizes):
+    plt.plot(T_range, specific_heat_data[L], label=f'L={L}', marker=f'{label[i]}', markerfacecolor='none', markeredgewidth=1.0, linestyle='none')
+plt.xlabel("$T$", fontsize=16)
+plt.ylabel("Specific Heat", fontsize=16)
 plt.grid(True, linewidth=1, color='#c7c7c7')
 plt.legend(loc='upper right', title='Lattice Size', title_fontsize=12)
-plt.savefig("plots/vortex_v_t.png", dpi=500, bbox_inches='tight')
+plt.savefig("plots/specificheat_v_t.png", dpi=500, bbox_inches='tight')
 plt.show()

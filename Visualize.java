@@ -79,7 +79,6 @@ class Visualize extends Canvas implements Runnable {
         frame.pack();
         offScreenImage = createImage(canvasSize,canvasSize);
         offScreenGraphics = offScreenImage.getGraphics();
-        double s[][] = model.getSpins();    // get the inital state of the lattice of spins
         for (int i=0; i < size; i++) {                    
             for (int j=0; j < size; j++) {    
                 colorSquare(i,j);
